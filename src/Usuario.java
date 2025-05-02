@@ -22,6 +22,7 @@ public class Usuario {
 
     @Override
     public String toString() {
+//Retorna uma representação textual do usuário
         return "Nome: " + nome + ", Contato: " + contato;
     }
 }

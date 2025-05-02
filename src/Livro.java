@@ -59,12 +59,21 @@ public class Livro {
         if (obj == null || getClass() != obj.getClass()) return false;
 
         Livro livro = (Livro) obj;
-        return titulo.equals(livro.titulo) && autor.equals(livro.autor);
+        if (titulo == null) {
+            if (livro.titulo != null) return false;
+        } else if (!titulo.equals(livro.titulo)) return false;
+        if (autor == null) {
+            if (livro.autor != null) return false;
+        } else if (!autor.equals(livro.autor)) return false;
+        return true;
     }
 
     @Override
     public int hashCode() {
-        return titulo.hashCode() + autor.hashCode();
+        int result = 1;
+        result = 31 * result + ((titulo == null) ? 0 : titulo.hashCode());
+        result = 31 * result + ((autor == null) ? 0 : autor.hashCode());
+        return result;
     }
 
     @Override

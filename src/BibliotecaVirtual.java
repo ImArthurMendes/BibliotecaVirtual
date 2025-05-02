@@ -7,6 +7,10 @@ import java.util.Scanner;
 import java.util.Stack;
 import java.util.List;
 import java.util.Set;
+import java.util.Map;
+import java.util.ArrayList; //ArrayList para ordenar distâncias
+import java.util.Collections;
+import java.util.Comparator;
 
 //Classe Principal - Biblioteca Virtual
 public class BibliotecaVirtual {
@@ -34,6 +38,8 @@ public class BibliotecaVirtual {
     private static void inicializarBiblioteca() {
         grafoLivros.inicializarGrafo();
 
+//Limpa a lista antes de adicionar para evitar duplicatas
+        listaLivros.clear();
         for (Livro livro : grafoLivros.listarTodosLivros()) {
             listaLivros.add(livro);
         }
@@ -57,10 +63,18 @@ public class BibliotecaVirtual {
             System.out.println("8. Ver histórico de navegação");
             System.out.println("9. Recomendar livros");
             System.out.println("10. Buscar livros por gênero");
+            System.out.println("11. Ver recomendações por proximidade");
             System.out.println("0. Sair");
             System.out.print("Escolha uma opção: ");
 
-            opcao = scanner.nextInt();
+            try {
+                opcao = scanner.nextInt();
+            } catch (java.util.InputMismatchException e) {
+                System.out.println("Erro: Por favor, digite um número.");
+                scanner.next();
+                opcao = -1;
+                continue;
+            }
             scanner.nextLine();
 
             switch (opcao) {
@@ -94,6 +108,9 @@ public class BibliotecaVirtual {
                 case 10:
                     buscarLivrosPorGenero();
                     break;
+                case 11:
+                    verRecomendacoesPorProximidade();
+                    break;
                 case 0:
                     System.out.println("Encerrando o programa. Até logo!");
                     break;
@@ -112,45 +129,79 @@ public class BibliotecaVirtual {
         System.out.print("Autor: ");
         String autor = scanner.nextLine();
 
-        System.out.print("Ano de publicação: ");
-        int ano = scanner.nextInt();
+        int ano = 0;
+        boolean anoValido = false;
+        while (!anoValido) {
+            System.out.print("Ano de publicação: ");
+            try {
+                ano = scanner.nextInt();
+                anoValido = true;
+            } catch (java.util.InputMismatchException e) {
+                System.out.println("Erro: Por favor, digite um número válido para o ano.");
+                scanner.next();
+            }
+        }
         scanner.nextLine();
 
         System.out.print("Gênero: ");
         String genero = scanner.nextLine();
 
         Livro novoLivro = new Livro(titulo, autor, ano, genero);
-        listaLivros.add(novoLivro);
-        grafoLivros.adicionarLivro(novoLivro);
+//Verifica se o livro já existe, baseado em título e autor
+        if (listaLivros.contains(novoLivro)) {
+            System.out.println("Aviso: Um livro com este título e autor já existe.");
+        } else {
+            listaLivros.add(novoLivro);
+            grafoLivros.adicionarLivro(novoLivro);
+            System.out.println("Livro adicionado com sucesso!");
 
-        System.out.println("Livro adicionado com sucesso!");
+            System.out.print("Deseja adicionar recomendações (conexões) para este livro? (S/N): ");
+            String resposta = scanner.nextLine();
 
-        System.out.print("Deseja adicionar recomendações para este livro? (S/N): ");
-        String resposta = scanner.nextLine();
-
-        if (resposta.equalsIgnoreCase("S")) {
-            adicionarRecomendacoes(novoLivro);
+            if (resposta.equalsIgnoreCase("S")) {
+                adicionarRecomendacoes(novoLivro);
+            }
         }
     }
 
     private static void adicionarRecomendacoes(Livro livro) {
-        System.out.println("\n--- ADICIONAR RECOMENDAÇÕES ---");
-        System.out.println("Selecione os livros para recomendar para: " + livro.getTitulo());
+        System.out.println("\n--- ADICIONAR RECOMENDAÇÕES (CONEXÕES NO GRAFO) ---");
+        System.out.println("Selecione os livros para conectar com: " + livro.getTitulo());
 
-//Listar todos os livros
         listarLivros();
 
-        System.out.println("Digite os números dos livros separados por vírgula (ou 0 para terminar): ");
+        if (listaLivros.size() <= 1) {
+            System.out.println("Não há outros livros para conectar.");
+            return;
+        }
+
+        System.out.println("Digite os números dos livros separados por vírgula (ex: 1, 3, 5) ou 0 para nenhum: ");
         String entrada = scanner.nextLine();
+
+        if (entrada.trim().equals("0")) {
+            System.out.println("Nenhuma recomendação adicionada.");
+            return;
+        }
 
         String[] indices = entrada.split(",");
         for (String indiceStr : indices) {
-            int indice = Integer.parseInt(indiceStr.trim());
+            try {
+                int indice = Integer.parseInt(indiceStr.trim());
+                if (indice > 0 && indice <= listaLivros.size()) {
+                    Livro livroRecomendado = listaLivros.get(indice - 1);
 
-            if (indice > 0 && indice <= listaLivros.size()) {
-                Livro livroRecomendado = listaLivros.get(indice - 1);
-                grafoLivros.adicionarRecomendacao(livro, livroRecomendado);
-                System.out.println("Recomendação adicionada: " + livroRecomendado.getTitulo());
+                    if (!livro.equals(livroRecomendado)) {
+                        grafoLivros.adicionarRecomendacao(livro, livroRecomendado);
+
+                        System.out.println("Conexão adicionada: " + livro.getTitulo() + " -> " + livroRecomendado.getTitulo());
+                    } else {
+                        System.out.println("Aviso: Não é possível conectar um livro a ele mesmo (índice " + indice + ").");
+                    }
+                } else {
+                    System.out.println("Aviso: Índice inválido ignorado: " + indice);
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("Aviso: Entrada inválida ignorada: " + indiceStr);
             }
         }
     }
@@ -165,9 +216,10 @@ public class BibliotecaVirtual {
         }
 
         for (int i = 0; i < listaLivros.size(); i++) {
-            System.out.println((i + 1) + ". " + listaLivros.get(i).getTitulo() +
-                    " por " + listaLivros.get(i).getAutor() +
-                    " (" + (listaLivros.get(i).isEmprestado() ? "Emprestado" : "Disponível") + ")");
+            Livro livroAtual = listaLivros.get(i);
+            System.out.println((i + 1) + ". " + livroAtual.getTitulo() +
+                    " por " + livroAtual.getAutor() +
+                    " (" + (livroAtual.isEmprestado() ? "Emprestado" : "Disponível") + ")");
         }
     }
 
@@ -180,7 +232,14 @@ public class BibliotecaVirtual {
         }
 
         System.out.print("\nDigite o número do livro para consultar: ");
-        int indice = scanner.nextInt();
+        int indice = -1;
+        try {
+            indice = scanner.nextInt();
+        } catch (java.util.InputMismatchException e) {
+            System.out.println("Erro: Por favor, digite um número.");
+            scanner.next();
+            return;
+        }
         scanner.nextLine();
 
         if (indice > 0 && indice <= listaLivros.size()) {
@@ -193,11 +252,11 @@ public class BibliotecaVirtual {
             System.out.println("(Livro adicionado ao histórico de navegação)");
 
 //Mostrar recomendações para este livro
-            System.out.println("\n--- RECOMENDAÇÕES PARA ESTE LIVRO ---");
+            System.out.println("\n--- RECOMENDAÇÕES DIRETAS (CONEXÕES) ---");
             Set<Livro> recomendacoes = grafoLivros.obterRecomendacoes(livroConsultado);
 
-            if (recomendacoes.isEmpty()) {
-                System.out.println("Não há recomendações para este livro.");
+            if (recomendacoes == null || recomendacoes.isEmpty()) {
+                System.out.println("Não há recomendações diretas para este livro.");
             } else {
                 int count = 1;
                 for (Livro recomendado : recomendacoes) {
@@ -219,14 +278,21 @@ public class BibliotecaVirtual {
         }
 
         System.out.print("\nDigite o número do livro para emprestar: ");
-        int indice = scanner.nextInt();
+        int indice = -1;
+        try {
+            indice = scanner.nextInt();
+        } catch (java.util.InputMismatchException e) {
+            System.out.println("Erro: Por favor, digite um número.");
+            scanner.next();
+            return;
+        }
         scanner.nextLine();
 
         if (indice > 0 && indice <= listaLivros.size()) {
             Livro livro = listaLivros.get(indice - 1);
 
             if (livro.isEmprestado()) {
-                System.out.println("Este livro já está emprestado!");
+                System.out.println("Este livro já está emprestado! Considere entrar na fila de espera (opção 6).");
             } else {
                 livro.setEmprestado(true);
                 System.out.println("Livro '" + livro.getTitulo() + "' emprestado com sucesso!");
@@ -242,40 +308,53 @@ public class BibliotecaVirtual {
 
 //Listar apenas livros emprestados
         boolean temLivrosEmprestados = false;
-        for (int i = 0; i < listaLivros.size(); i++) {
-            if (listaLivros.get(i).isEmprestado()) {
-                if (!temLivrosEmprestados) {
-                    System.out.println("Livros emprestados:");
-                    temLivrosEmprestados = true;
-                }
-                System.out.println((i + 1) + ". " + listaLivros.get(i).getTitulo());
+        List<Livro> emprestados = new ArrayList<>();
+        for (Livro livro : listaLivros) {
+            if (livro.isEmprestado()) {
+                emprestados.add(livro);
             }
         }
 
-        if (!temLivrosEmprestados) {
+        if (emprestados.isEmpty()) {
             System.out.println("Não há livros emprestados no momento.");
             return;
         }
 
-        System.out.print("Digite o número do livro para devolver: ");
-        int indice = scanner.nextInt();
+        System.out.println("Livros emprestados:");
+        for (int i = 0; i < emprestados.size(); i++) {
+            System.out.println((i + 1) + ". " + emprestados.get(i).getTitulo());
+        }
+
+        System.out.print("Digite o número do livro para devolver (da lista acima): ");
+        int indiceListaEmprestados = -1;
+        try {
+            indiceListaEmprestados = scanner.nextInt();
+        } catch (java.util.InputMismatchException e) {
+            System.out.println("Erro: Por favor, digite um número.");
+            scanner.next();
+            return;
+        }
         scanner.nextLine();
 
-        if (indice > 0 && indice <= listaLivros.size()) {
-            Livro livro = listaLivros.get(indice - 1);
+        if (indiceListaEmprestados > 0 && indiceListaEmprestados <= emprestados.size()) {
+            Livro livroParaDevolver = emprestados.get(indiceListaEmprestados - 1);
 
-            if (livro.isEmprestado()) {
-                livro.setEmprestado(false);
-                System.out.println("Livro '" + livro.getTitulo() + "' devolvido com sucesso!");
+            for(Livro livro : listaLivros) {
+                if (livro.equals(livroParaDevolver)) {
+                    if (livro.isEmprestado()) {
+                        livro.setEmprestado(false);
+                        System.out.println("Livro '" + livro.getTitulo() + "' devolvido com sucesso!");
 
-//Notificar próximo usuário na fila de espera
-                if (!filaEspera.isEmpty()) {
-                    Usuario proximoUsuario = filaEspera.poll();
-                    System.out.println("O usuário " + proximoUsuario.getNome() +
-                            " foi notificado que o livro está disponível!");
+                        if (!filaEspera.isEmpty()) {
+                            Usuario proximoUsuario = filaEspera.poll();
+                            System.out.println("Notificação: O usuário " + proximoUsuario.getNome() +
+                                    " (primeiro da fila geral) foi notificado sobre a devolução.");
+                        }
+                    } else {
+                        System.out.println("Erro interno: Livro selecionado não estava marcado como emprestado.");
+                    }
+                    return;
                 }
-            } else {
-                System.out.println("Este livro não está emprestado!");
             }
         } else {
             System.out.println("Índice inválido!");
@@ -291,27 +370,34 @@ public class BibliotecaVirtual {
         }
 
         System.out.print("\nDigite o número do livro que deseja entrar na fila de espera: ");
-        int indice = scanner.nextInt();
+        int indice = -1;
+        try {
+            indice = scanner.nextInt();
+        } catch (java.util.InputMismatchException e) {
+            System.out.println("Erro: Por favor, digite um número.");
+            scanner.next();
+            return;
+        }
         scanner.nextLine();
 
         if (indice > 0 && indice <= listaLivros.size()) {
             Livro livro = listaLivros.get(indice - 1);
 
             if (!livro.isEmprestado()) {
-                System.out.println("Este livro está disponível! Você pode emprestá-lo agora.");
+                System.out.println("Este livro está disponível! Você pode emprestá-lo agora (opção 4).");
                 return;
             }
 
             System.out.print("Digite seu nome: ");
             String nome = scanner.nextLine();
 
-            System.out.print("Digite seu contato: ");
+            System.out.print("Digite seu contato (email ou telefone): ");
             String contato = scanner.nextLine();
 
             Usuario usuario = new Usuario(nome, contato);
             filaEspera.add(usuario);
 
-            System.out.println("Você entrou na fila de espera para o livro '" + livro.getTitulo() + "'");
+            System.out.println(nome + ", você entrou na fila de espera geral. Será notificado quando um livro for devolvido.");
         } else {
             System.out.println("Índice inválido!");
         }
@@ -319,15 +405,17 @@ public class BibliotecaVirtual {
 
 //Ver a fila de espera atual
     private static void verFilaEspera() {
-        System.out.println("\n--- FILA DE ESPERA ---");
+        System.out.println("\n--- FILA DE ESPERA (GERAL) ---");
 
         if (filaEspera.isEmpty()) {
             System.out.println("A fila de espera está vazia!");
             return;
         }
 
+        System.out.println("Usuários aguardando (ordem de chegada):");
         int posicao = 1;
-        for (Usuario usuario : filaEspera) {
+
+        for (Usuario usuario : new LinkedList<>(filaEspera)) {
             System.out.println(posicao + ". " + usuario);
             posicao++;
         }
@@ -335,7 +423,7 @@ public class BibliotecaVirtual {
 
 //Ver histórico de navegação
     private static void verHistoricoNavegacao() {
-        System.out.println("\n--- HISTÓRICO DE NAVEGAÇÃO ---");
+        System.out.println("\n--- HISTÓRICO DE NAVEGAÇÃO (LIVROS CONSULTADOS) ---");
 
         if (historicoNavegacao.isEmpty()) {
             System.out.println("O histórico de navegação está vazio!");
@@ -344,9 +432,7 @@ public class BibliotecaVirtual {
 
         System.out.println("Livros consultados recentemente (do mais recente para o mais antigo):");
 
-//Criar uma cópia da pilha para não perder os dados originais
-        Stack<Livro> copiaHistorico = new Stack<>();
-        copiaHistorico.addAll(historicoNavegacao);
+        Stack<Livro> copiaHistorico = (Stack<Livro>) historicoNavegacao.clone();
 
         int posicao = 1;
         while (!copiaHistorico.isEmpty()) {
@@ -366,19 +452,26 @@ public class BibliotecaVirtual {
             return;
         }
 
-        System.out.print("Digite o número do livro para obter recomendações: ");
-        int indice = scanner.nextInt();
+        System.out.print("Digite o número do livro para obter recomendações diretas: ");
+        int indice = -1;
+        try {
+            indice = scanner.nextInt();
+        } catch (java.util.InputMismatchException e) {
+            System.out.println("Erro: Por favor, digite um número.");
+            scanner.next();
+            return;
+        }
         scanner.nextLine();
 
         if (indice > 0 && indice <= listaLivros.size()) {
             Livro livroReferencia = listaLivros.get(indice - 1);
 
-            System.out.println("\nRecomendações baseadas em: " + livroReferencia.getTitulo());
+            System.out.println("\nRecomendações diretas: " + livroReferencia.getTitulo());
 
-            List<Livro> recomendacoes = grafoLivros.recomendarLivros(livroReferencia);
+            Set<Livro> recomendacoes = grafoLivros.obterRecomendacoes(livroReferencia);
 
-            if (recomendacoes.isEmpty()) {
-                System.out.println("Não há recomendações para este livro.");
+            if (recomendacoes == null || recomendacoes.isEmpty()) {
+                System.out.println("Não há recomendações diretas para este livro.");
             } else {
                 int count = 1;
                 for (Livro recomendado : recomendacoes) {
@@ -403,7 +496,7 @@ public class BibliotecaVirtual {
         if (livrosDoGenero.isEmpty()) {
             System.out.println("Não foram encontrados livros do gênero: " + genero);
         } else {
-            System.out.println("\nLivros do gênero " + genero + ":");
+            System.out.println("\nLivros do gênero '" + genero + "':");
 
             for (int i = 0; i < livrosDoGenero.size(); i++) {
                 Livro livro = livrosDoGenero.get(i);
@@ -411,4 +504,62 @@ public class BibliotecaVirtual {
             }
         }
     }
+
+    // --- INÍCIO DA ATIVIDADE SOMATIVA 2 ---
+
+    private static void verRecomendacoesPorProximidade() {
+        System.out.println("\n--- RECOMENDAÇÕES POR PROXIMIDADE ---");
+
+        listarLivros();
+
+        if (listaLivros.isEmpty()) {
+            return;
+        }
+
+        System.out.print("Digite o número do livro de referência para calcular as distâncias: ");
+        int indice = -1;
+        try {
+            indice = scanner.nextInt();
+        } catch (java.util.InputMismatchException e) {
+            System.out.println("Erro: Por favor, digite um número.");
+            scanner.next();
+            return;
+        }
+        scanner.nextLine();
+
+        if (indice > 0 && indice <= listaLivros.size()) {
+            Livro livroOrigem = listaLivros.get(indice - 1);
+            System.out.println("\nCalculando distâncias a partir de: " + livroOrigem.getTitulo() + "...");
+
+            Map<Livro, Integer> distancias = grafoLivros.calcularDistancias(livroOrigem);
+
+            if (distancias.isEmpty() && grafoLivros.listarTodosLivros().contains(livroOrigem)) {
+                System.out.println("O livro selecionado não possui conexões com outros livros no grafo ou não foi encontrado internamente.");
+            } else if (distancias.isEmpty()) {
+                System.out.println("Livro de origem não encontrado no grafo.");
+            } else {
+                List<Map.Entry<Livro, Integer>> listaDistancias = new ArrayList<>(distancias.entrySet());
+
+//Ordena a lista pela distância
+                Collections.sort(listaDistancias, new Comparator<Map.Entry<Livro, Integer>>() {
+                    @Override
+                    public int compare(Map.Entry<Livro, Integer> e1, Map.Entry<Livro, Integer> e2) {
+                        return e1.getValue().compareTo(e2.getValue());
+                    }
+                });
+
+                System.out.println("\nLivros ordenados por proximidade (menor distância primeiro):");
+                for (Map.Entry<Livro, Integer> entry : listaDistancias) {
+                    Livro livro = entry.getKey();
+                    int distancia = entry.getValue();
+                    if (!livro.equals(livroOrigem)) {
+                        System.out.println("- " + livro.getTitulo() + " por " + livro.getAutor() + " (Distância: " + distancia + ")");
+                    }
+                }
+            }
+        } else {
+            System.out.println("Índice inválido!");
+        }
+    }
 }
+

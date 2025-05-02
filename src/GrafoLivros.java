@@ -8,9 +8,11 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Queue;
+import java.util.LinkedList;
 
 public class GrafoLivros {
-//HashMap para representar o grafo
     private HashMap<Livro, Set<Livro>> grafo;
 
     public GrafoLivros() {
@@ -33,12 +35,11 @@ public class GrafoLivros {
         grafo.get(livro).add(recomendacao);
     }
 
-//Obter todas as recomendações para um livro
+//Obter todas as recomendações diretas para um livro
     public Set<Livro> obterRecomendacoes(Livro livro) {
         return grafo.getOrDefault(livro, new HashSet<>());
     }
 
-//Inicializar o grafo com alguns livros e recomendações
     public void inicializarGrafo() {
         Livro livro1 = new Livro("O Hobbit", "J.R.R. Tolkien", 1937, "Fantasia");
         Livro livro2 = new Livro("Diário de um Banana", "Jeff Kinney", 2007, "Infantojuvenil");
@@ -65,46 +66,46 @@ public class GrafoLivros {
         adicionarLivro(livro10);
         adicionarLivro(livro11);
 
-//Adicionar recomendações
-        adicionarRecomendacao(livro1, livro5);  // O Hobbit -> Harry Potter
-        adicionarRecomendacao(livro1, livro11); // O Hobbit -> A Guerra dos Tronos
-        adicionarRecomendacao(livro1, livro8);  // O Hobbit -> Percy Jackson
-//Diário de um Banana
-        adicionarRecomendacao(livro2, livro8);  // Diário de um Banana -> Percy Jackson
-        adicionarRecomendacao(livro2, livro6);  // Diário de um Banana -> A Culpa é das Estrelas
-//Pai Rico, Pai Pobre
-        adicionarRecomendacao(livro3, livro9);  // Pai Rico, Pai Pobre -> O Poder do Hábito
-        adicionarRecomendacao(livro3, livro10); // Pai Rico, Pai Pobre -> A Sutil Arte de Ligar o Foda-se
-        adicionarRecomendacao(livro3, livro4);  // Pai Rico, Pai Pobre -> Sapiens
-//Sapiens
-        adicionarRecomendacao(livro4, livro3);  // Sapiens -> Pai Rico, Pai Pobre
-        adicionarRecomendacao(livro4, livro9);  // Sapiens -> O Poder do Hábito
-//Harry Potter
-        adicionarRecomendacao(livro5, livro1);  // Harry Potter -> O Hobbit
-        adicionarRecomendacao(livro5, livro8);  // Harry Potter -> Percy Jackson
-        adicionarRecomendacao(livro5, livro11); // Harry Potter -> A Guerra dos Tronos
-//A Culpa é das Estrelas
-        adicionarRecomendacao(livro6, livro2);  // A Culpa é das Estrelas -> Diário de um Banana
-        adicionarRecomendacao(livro6, livro7);  // A Culpa é das Estrelas -> Os Jogos da Fome
-//Os Jogos da Fome
-        adicionarRecomendacao(livro7, livro11); // Os Jogos da Fome -> A Guerra dos Tronos
-        adicionarRecomendacao(livro7, livro6);  // Os Jogos da Fome -> A Culpa é das Estrelas
-        adicionarRecomendacao(livro7, livro8);  // Os Jogos da Fome -> Percy Jackson
-//Percy Jackson
-        adicionarRecomendacao(livro8, livro5);  // Percy Jackson -> Harry Potter
-        adicionarRecomendacao(livro8, livro1);  // Percy Jackson -> O Hobbit
-//O Poder do Hábito
-        adicionarRecomendacao(livro9, livro10); // O Poder do Hábito -> A Sutil Arte de Ligar o Foda-se
-        adicionarRecomendacao(livro9, livro3);  // O Poder do Hábito -> Pai Rico, Pai Pobre
-//A Sutil Arte de Ligar o Foda-se
-        adicionarRecomendacao(livro10, livro9); // A Sutil Arte de Ligar o Foda-se -> O Poder do Hábito
-        adicionarRecomendacao(livro10, livro3); // A Sutil Arte de Ligar o Foda-se -> Pai Rico, Pai Pobre
-//A Guerra dos Tronos
-        adicionarRecomendacao(livro11, livro1); // A Guerra dos Tronos -> O Hobbit
-        adicionarRecomendacao(livro11, livro7); // A Guerra dos Tronos -> Os Jogos da Fome
+//Adicionar recomendações (conexões no grafo)
+        adicionarRecomendacao(livro1, livro5);  //O Hobbit -> Harry Potter
+        adicionarRecomendacao(livro1, livro11); //O Hobbit -> A Guerra dos Tronos
+        adicionarRecomendacao(livro1, livro8);  //O Hobbit -> Percy Jackson
+
+        adicionarRecomendacao(livro2, livro8);  //Diário de um Banana -> Percy Jackson
+        adicionarRecomendacao(livro2, livro6);  //Diário de um Banana -> A Culpa é das Estrelas
+
+        adicionarRecomendacao(livro3, livro9);  //Pai Rico, Pai Pobre -> O Poder do Hábito
+        adicionarRecomendacao(livro3, livro10); //Pai Rico, Pai Pobre -> A Sutil Arte de Ligar o Foda-se
+        adicionarRecomendacao(livro3, livro4);  //Pai Rico, Pai Pobre -> Sapiens
+
+        adicionarRecomendacao(livro4, livro3);  //Sapiens -> Pai Rico, Pai Pobre
+        adicionarRecomendacao(livro4, livro9);  //Sapiens -> O Poder do Hábito
+
+        adicionarRecomendacao(livro5, livro1);  //Harry Potter -> O Hobbit
+        adicionarRecomendacao(livro5, livro8);  //Harry Potter -> Percy Jackson
+        adicionarRecomendacao(livro5, livro11); //Harry Potter -> A Guerra dos Tronos
+
+        adicionarRecomendacao(livro6, livro2);  //A Culpa é das Estrelas -> Diário de um Banana
+        adicionarRecomendacao(livro6, livro7);  //A Culpa é das Estrelas -> Os Jogos da Fome
+
+        adicionarRecomendacao(livro7, livro11); //Os Jogos da Fome -> A Guerra dos Tronos
+        adicionarRecomendacao(livro7, livro6);  //Os Jogos da Fome -> A Culpa é das Estrelas
+        adicionarRecomendacao(livro7, livro8);  //Os Jogos da Fome -> Percy Jackson
+
+        adicionarRecomendacao(livro8, livro5);  //Percy Jackson -> Harry Potter
+        adicionarRecomendacao(livro8, livro1);  //Percy Jackson -> O Hobbit
+
+        adicionarRecomendacao(livro9, livro10); //O Poder do Hábito -> A Sutil Arte de Ligar o Foda-se
+        adicionarRecomendacao(livro9, livro3);  //O Poder do Hábito -> Pai Rico, Pai Pobre
+
+        adicionarRecomendacao(livro10, livro9); //A Sutil Arte de Ligar o Foda-se -> O Poder do Hábito
+        adicionarRecomendacao(livro10, livro3); //A Sutil Arte de Ligar o Foda-se -> Pai Rico, Pai Pobre
+
+        adicionarRecomendacao(livro11, livro1); //A Guerra dos Tronos -> O Hobbit
+        adicionarRecomendacao(livro11, livro7); //A Guerra dos Tronos -> Os Jogos da Fome
     }
 
-//MEtodo para recomendar livros com base em um livro que o usuário gostou
+//Metodo para recomendar livros com base em um livro que o usuário gostou
     public List<Livro> recomendarLivros(Livro livroReferencia) {
         List<Livro> recomendacoes = new ArrayList<>();
 
@@ -134,4 +135,35 @@ public class GrafoLivros {
 
         return livrosDoGenero;
     }
+
+    // --- INÍCIO DA IMPLEMENTAÇÃO DA ATIVIDADE SOMATIVA 2 ---
+
+    public Map<Livro, Integer> calcularDistancias(Livro origem) {
+        Map<Livro, Integer> distancias = new HashMap<>();
+        Queue<Livro> fila = new LinkedList<>();
+
+//Verifica se a origem existe no grafo
+        if (!grafo.containsKey(origem)) {
+            System.out.println("Erro: Livro de origem não encontrado no grafo.");
+            return distancias;
+        }
+
+        distancias.put(origem, 0);
+        fila.add(origem);
+
+        while (!fila.isEmpty()) {
+            Livro atual = fila.poll();
+            int distanciaAtual = distancias.get(atual);
+
+            for (Livro vizinho : grafo.getOrDefault(atual, new HashSet<>())) {
+
+                if (!distancias.containsKey(vizinho)) {
+                    distancias.put(vizinho, distanciaAtual + 1); //Distância é incrementada em 1
+                    fila.add(vizinho);
+                }
+            }
+        }
+        return distancias;
+    }
 }
+
